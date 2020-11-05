@@ -11,7 +11,7 @@ with (JavaPackages) {
             thisLight.setAmbient(java.awt.Color.blue);
         }
         else {
-            thisLight.setAmbient(new Color(0.3, 0.3, 0.3));
+            thisLight.setAmbient(java.awt.Color.white);
         }
         toggle = !toggle;
     }
