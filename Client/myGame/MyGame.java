@@ -276,11 +276,18 @@ public class MyGame extends VariableFrameRateGame {
     public void addGhostAvatarToGameWorld(GhostAvatar avatar) throws IOException {
         if (avatar != null) {
             Entity ghostE = getEngine().getSceneManager()
-                    .createEntity(avatar.getId().toString(), "cube.obj");
+                    .createEntity(avatar.getId().toString(), "cube_nomat.obj");
             ghostE.setPrimitive(Primitive.TRIANGLES);
             SceneNode ghostN = getEngine().getSceneManager().getRootSceneNode()
                     .createChildSceneNode(avatar.getId().toString());
             ghostN.attachObject(ghostE);
+            Texture ghostAvatarTexture =
+                    getEngine().getTextureManager().getAssetByPath("ghost-brick.jpg");
+            RenderSystem renderSys = getEngine().getSceneManager().getRenderSystem();
+            TextureState textureState =
+                    (TextureState) renderSys.createRenderState(RenderState.Type.TEXTURE);
+            textureState.setTexture(ghostAvatarTexture);
+            ghostE.setRenderState(textureState);
             avatar.setNode(ghostN);
             avatar.setEntity(ghostE);
             avatar.setPosition(avatar.getInitPosition());
