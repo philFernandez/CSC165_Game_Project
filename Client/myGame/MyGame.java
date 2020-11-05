@@ -44,6 +44,7 @@ public class MyGame extends VariableFrameRateGame {
     private Vector<UUID> gameObjectsToRemove;
     private Action moveFwd;
     private InputManager inputMangr;
+    private CameraOrbitController cameraOrbitController;
 
     // javascript things ---------------------
     private long fileLastModified;
@@ -57,6 +58,7 @@ public class MyGame extends VariableFrameRateGame {
     float elapsTime = 0.0f;
     String elapsTimeStr, counterStr, dispStr;
     int elapsTimeSec, counter = 0;
+    float delta, previousTime;
 
     public MyGame(String serverAddress, int serverPort) {
         super();
@@ -121,24 +123,21 @@ public class MyGame extends VariableFrameRateGame {
         rs.createRenderWindow(new DisplayMode(1000, 700, 24, 60), false);
     }
 
-    private Camera camera;
 
     @Override
-    protected void setupCameras(SceneManager sm, RenderWindow rw) {
-        SceneNode rootNode = sm.getRootSceneNode();
-        camera = sm.createCamera("MainCamera", Projection.PERSPECTIVE);
-        rw.getViewport(0).setCamera(camera);
-
-        // camera.setRt((Vector3f) Vector3f.createFrom(1.0f, 0.0f, 0.0f));
-        // camera.setUp((Vector3f) Vector3f.createFrom(0.0f, 1.0f, 0.0f));
-        // camera.setFd((Vector3f) Vector3f.createFrom(0.0f, 0.0f, -1.0f));
-
-        // camera.setPo((Vector3f) Vector3f.createFrom(0.0f, 0.0f, 0.0f));
-
-
+    protected void setupCameras(SceneManager sceneMangr, RenderWindow renderWin) {
+        Camera camera = sceneMangr.createCamera("MainCamera", Projection.PERSPECTIVE);
+        renderWin.getViewport(0).setCamera(camera);
+        SceneNode cameraN = sceneMangr.getRootSceneNode()
+                .createChildSceneNode(camera.getName() + "Node");
+        cameraN.attachObject(camera);
         camera.setMode('r');
-        SceneNode cameraNode = rootNode.createChildSceneNode(camera.getName() + "Node");
-        // cameraNode.attachObject(camera);
+        camera.getFrustum().setFarClipDistance(500.0f);
+    }
+
+    private void setupOrbitCamera(Engine engine, SceneManager sceneMangr) {
+        cameraOrbitController = new CameraOrbitController(this, "MainCamera",
+                "playerAvatarNode", inputMangr.getKeyboardName());
     }
 
 
@@ -147,7 +146,8 @@ public class MyGame extends VariableFrameRateGame {
 
 
     @Override
-    protected void setupScene(Engine eng, SceneManager sceneMangr) throws IOException {
+    protected void setupScene(Engine engine, SceneManager sceneMangr)
+            throws IOException {
         inputMangr = new GenericInputManager();
         Configuration conf = getEngine().getConfiguration();
         TextureManager textureMangr = getEngine().getTextureManager();
@@ -203,7 +203,6 @@ public class MyGame extends VariableFrameRateGame {
                 (TextureState) renderSys.createRenderState(RenderState.Type.TEXTURE);
         textureState.setTexture(playerAvatarTexture);
         playerAvatarE.setRenderState(textureState);
-        playerAvatarN.attachObject(camera);
 
 
 
@@ -244,6 +243,7 @@ public class MyGame extends VariableFrameRateGame {
         tessE.setTexture(this.getEngine(), "grass2.jpg");
 
 
+        setupOrbitCamera(engine, sceneMangr);
         setupNetworking();
         setupInputs();
     }
@@ -309,13 +309,18 @@ public class MyGame extends VariableFrameRateGame {
         }
     }
 
+    public float getDelta() {
+        return delta;
+    }
+
 
 
     @Override
     protected void update(Engine engine) {
-        // build and set HUD
         rs = (GL4RenderSystem) engine.getRenderSystem();
         elapsTime += engine.getElapsedTimeMillis();
+        delta = elapsTime - previousTime;
+        previousTime = elapsTime;
         elapsTimeSec = Math.round(elapsTime / 1000.0f);
         elapsTimeStr = Integer.toString(elapsTimeSec);
         counterStr = Integer.toString(counter);
@@ -323,6 +328,7 @@ public class MyGame extends VariableFrameRateGame {
         rs.setHUD(dispStr, 15, 15);
         processNetworking(elapsTime);
         inputMangr.update(elapsTime);
+        cameraOrbitController.updateCameraPosition();
         updateParameterScript();
     }
 
@@ -396,5 +402,10 @@ public class MyGame extends VariableFrameRateGame {
         }
     }
     // ----------------------------------------------------------------------
+
+
+    public InputManager getInputManager() {
+        return inputMangr;
+    }
 
 }

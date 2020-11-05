@@ -1,7 +1,7 @@
 //  avatar position
 var avatarMoveBack = 20.0;
 var playerAvatarPOSx = 0.0;
-var playerAvatarPOSy = 0.0;
+var playerAvatarPOSy = 15.0;
 var playerAvatarPOSz = 0.0;
 // ----------------
 
