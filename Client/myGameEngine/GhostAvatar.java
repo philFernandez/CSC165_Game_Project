@@ -14,6 +14,7 @@ public class GhostAvatar {
     private SceneNode node;
     private Entity entity;
     private Vector3 initialPosition;
+    private Vector3 initialScale;
 
     // probably need to do something with position in the constructor?
     // like set the nodes position with it?
@@ -44,6 +45,17 @@ public class GhostAvatar {
         return node.getLocalRotation();
     }
 
+    public Vector3 getScale() {
+        return node.getWorldScale();
+    }
+
+    // Can't set node position until the node actually exists, 
+    // so save init position when object is instantiated, and
+    // use it to set the node's position after it is created in Game
+    public Vector3 getInitPosition() { // Evenutally just create node in the class insead?
+        return initialPosition;
+    }
+
     public void setRotation(float m1, float m2, float m3, float m4, float m5, float m6,
             float m7, float m8, float m9) {
         float[] values = {m1, m2, m3, m4, m5, m6, m7, m8, m9};
@@ -67,17 +79,19 @@ public class GhostAvatar {
     }
 
     public void setPosition(Vector3 position) {
-        setPosition(position.x(), position.y(), position.z());
+        node.setLocalPosition(position);
     }
 
     public void setPosition(float x, float y, float z) {
-        node.setLocalPosition(Vector3f.createFrom(x, y, z));
+        this.setPosition(Vector3f.createFrom(x, y, z));
     }
 
-    // Can't set node position until the node actually exists, 
-    // so save init position when object is instantiated, and
-    // use it to set the node's position after it is created in Game
-    public Vector3 getInitPosition() {
-        return initialPosition;
+    public void setScale(Vector3 scale) {
+        setScale(scale);
     }
+
+    public void setScale(float x, float y, float z) {
+        this.setScale(Vector3f.createFrom(x, y, z));
+    }
+
 }

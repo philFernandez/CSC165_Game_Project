@@ -8,7 +8,7 @@ var JavaPackages = new JavaImporter(
 
 // creates a RAGE object - a light
 with (JavaPackages) {
-    var plight = sm.createLight("testLamp1", Light.Type.POINT);
+    var plight = sceneMangr.createLight("testLamp1", Light.Type.SPOT);
     plight.setAmbient(new Color(0.3, 0.3, 0.3));
     plight.setDiffuse(new Color(0.7, 0.7, 0.7));
     plight.setSpecular(new Color(1.0, 1.0, 1.0));

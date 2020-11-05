@@ -17,14 +17,17 @@ import ray.input.action.AbstractInputAction;
 import ray.input.action.Action;
 import ray.networking.IGameConnection.ProtocolType;
 import ray.rage.*;
+import ray.rage.asset.texture.Texture;
+import ray.rage.asset.texture.TextureManager;
 import ray.rage.game.*;
 import ray.rage.rendersystem.*;
 import ray.rage.rendersystem.Renderable.*;
 import ray.rage.scene.*;
 import ray.rage.scene.Camera.Frustum.*;
-import ray.rage.scene.controllers.RotationController;
 import ray.rml.*;
 import ray.rage.rendersystem.gl4.GL4RenderSystem;
+import ray.rage.rendersystem.states.RenderState;
+import ray.rage.rendersystem.states.TextureState;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -45,7 +48,6 @@ public class MyGame extends VariableFrameRateGame {
     protected File scriptFile1, scriptFile2, scriptFile3;
     protected ScriptEngine jsEngine;
     protected ColorAction colorAction;
-    private RotationController rc;
     // ---------------------------------------
 
     // to minimize variable allocation in update()
@@ -134,40 +136,56 @@ public class MyGame extends VariableFrameRateGame {
     }
 
 
+    private SceneNode dolphinN;
+    private SceneNode playerAvatarN;
+
+
     @Override
-    protected void setupScene(Engine eng, SceneManager sm) throws IOException {
+    protected void setupScene(Engine eng, SceneManager sceneMangr) throws IOException {
         inputMangr = new GenericInputManager();
-        Entity dolphinE = sm.createEntity("myDolphin", "dolphinHighPoly.obj");
-        dolphinE.setPrimitive(Primitive.TRIANGLES);
-
-        SceneNode dolphinN =
-                sm.getRootSceneNode().createChildSceneNode(dolphinE.getName() + "Node");
-        dolphinN.moveBackward(2.0f);
-        dolphinN.attachObject(dolphinE);
-
-        // prepare script engine
         ScriptEngineManager factory = new ScriptEngineManager();
         jsEngine = factory.getEngineByName("js");
         // use spin speed setting from the first script to init dolphin rotation
         scriptFile1 = new File("jsScripts/InitParams.js");
         this.executeScript(jsEngine, scriptFile1);
-        rc = new RotationController(Vector3f.createUnitVectorY(),
-                ((Double) (jsEngine.get("spinSpeed"))).floatValue());
-        rc.addNode(dolphinN);
-        sm.addController(rc);
+
+
+        Entity playerAvatarE = sceneMangr.createEntity("playerAvatar", "cube_nomat.obj");
+        playerAvatarE.setPrimitive(Primitive.TRIANGLES);
+        playerAvatarN = sceneMangr.getRootSceneNode()
+                .createChildSceneNode(playerAvatarE.getName() + "Node");
+        playerAvatarN.attachObject(playerAvatarE);
+        playerAvatarN
+                .moveBackward(((Double) (jsEngine.get("avatarMoveBack"))).floatValue());
+        double xPos = ((Double) (jsEngine.get("playerAvatarPOSx"))).floatValue();
+        double yPos = ((Double) (jsEngine.get("playerAvatarPOSy"))).floatValue();
+        double zPos = ((Double) (jsEngine.get("playerAvatarPOSz"))).floatValue();
+        playerAvatarN.setLocalPosition((float) xPos, (float) yPos, (float) zPos);
+        TextureManager textureMangr = getEngine().getTextureManager();
+        Texture playerAvatarTexture = textureMangr.getAssetByPath("graffiti-brick.jpg");
+        RenderSystem renderSys = sceneMangr.getRenderSystem();
+        TextureState textureState =
+                (TextureState) renderSys.createRenderState(RenderState.Type.TEXTURE);
+        textureState.setTexture(playerAvatarTexture);
+        playerAvatarE.setRenderState(textureState);
+
+
+
+        // prepare script engine
 
         // add the light specified in the second script to the game world
         scriptFile2 = new File("jsScripts/CreateLight.js");
-        jsEngine.put("sm", sm);
+        jsEngine.put("sceneMangr", sceneMangr);
         this.executeScript(jsEngine, scriptFile2);
 
-        SceneNode plightNode = sm.getRootSceneNode().createChildSceneNode("plightNode");
+        SceneNode plightNode =
+                sceneMangr.getRootSceneNode().createChildSceneNode("plightNode");
         plightNode.attachObject((Light) jsEngine.get("plight"));
 
         scriptFile3 = new File("jsScripts/UpdateLightColor.js");
         this.executeScript(jsEngine, scriptFile3);
         String kbName = inputMangr.getKeyboardName();
-        colorAction = new ColorAction(sm);
+        colorAction = new ColorAction(sceneMangr);
         inputMangr.associateAction(kbName, Key.SPACE, colorAction,
                 InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
 
@@ -192,7 +210,7 @@ public class MyGame extends VariableFrameRateGame {
     }
 
     public Vector3 getPlayerPosition() {
-        return getEngine().getSceneManager().getSceneNode("myDolphinNode")
+        return getEngine().getSceneManager().getSceneNode("playerAvatarNode")
                 .getWorldPosition();
     }
 
@@ -209,7 +227,6 @@ public class MyGame extends VariableFrameRateGame {
             SceneNode ghostN = getEngine().getSceneManager().getRootSceneNode()
                     .createChildSceneNode(avatar.getId().toString());
             ghostN.attachObject(ghostE);
-            ghostN.scale(0.3f, 0.3f, 0.3f);
             avatar.setNode(ghostN);
             avatar.setEntity(ghostE);
             avatar.setPosition(avatar.getInitPosition());
@@ -219,6 +236,21 @@ public class MyGame extends VariableFrameRateGame {
     public void removeGhostAvatarFromGameWorld(GhostAvatar avatar) {
         if (avatar != null)
             gameObjectsToRemove.add(avatar.getId());
+    }
+
+    private void updateParameterScript() {
+        // Should update on the fly? but doesn't
+        long modTime = scriptFile1.lastModified();
+        if (modTime > fileLastModified) {
+            fileLastModified = modTime;
+            this.executeScript(jsEngine, scriptFile1);
+            double xPos = ((Double) (jsEngine.get("playerAvatarPOSx"))).floatValue();
+            double yPos = ((Double) (jsEngine.get("playerAvatarPOSy"))).floatValue();
+            double zPos = ((Double) (jsEngine.get("playerAvatarPOSz"))).floatValue();
+            playerAvatarN.setLocalPosition((float) xPos, (float) yPos, (float) zPos);
+            playerAvatarN.moveBackward(
+                    ((Double) (jsEngine.get("avatarMoveBack"))).floatValue());
+        }
     }
 
 
@@ -235,14 +267,7 @@ public class MyGame extends VariableFrameRateGame {
         rs.setHUD(dispStr, 15, 15);
         processNetworking(elapsTime);
         inputMangr.update(elapsTime);
-
-        // Should update on the fly? but doesn't
-        long modTime = scriptFile1.lastModified();
-        if (modTime > fileLastModified) {
-            fileLastModified = modTime;
-            this.executeScript(jsEngine, scriptFile1);
-            rc.setSpeed(((Double) (jsEngine.get("spinSpeed"))).floatValue());
-        }
+        updateParameterScript();
     }
 
     public void setIsConnected(boolean isConnected) {
@@ -251,7 +276,7 @@ public class MyGame extends VariableFrameRateGame {
 
     protected void setupInputs() {
         SceneNode playerNode =
-                getEngine().getSceneManager().getSceneNode("myDolphinNode");
+                getEngine().getSceneManager().getSceneNode("playerAvatarNode");
         moveFwd = new MoveForwardAction(playerNode, protocolClient);
         Action sendCloseConnectionPacketAction = new Action() {
             @Override
