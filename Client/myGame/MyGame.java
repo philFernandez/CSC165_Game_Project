@@ -121,24 +121,29 @@ public class MyGame extends VariableFrameRateGame {
         rs.createRenderWindow(new DisplayMode(1000, 700, 24, 60), false);
     }
 
+    private Camera camera;
+
     @Override
     protected void setupCameras(SceneManager sm, RenderWindow rw) {
         SceneNode rootNode = sm.getRootSceneNode();
-        Camera camera = sm.createCamera("MainCamera", Projection.PERSPECTIVE);
+        camera = sm.createCamera("MainCamera", Projection.PERSPECTIVE);
         rw.getViewport(0).setCamera(camera);
 
-        camera.setRt((Vector3f) Vector3f.createFrom(1.0f, 0.0f, 0.0f));
-        camera.setUp((Vector3f) Vector3f.createFrom(0.0f, 1.0f, 0.0f));
-        camera.setFd((Vector3f) Vector3f.createFrom(0.0f, 0.0f, -1.0f));
+        // camera.setRt((Vector3f) Vector3f.createFrom(1.0f, 0.0f, 0.0f));
+        // camera.setUp((Vector3f) Vector3f.createFrom(0.0f, 1.0f, 0.0f));
+        // camera.setFd((Vector3f) Vector3f.createFrom(0.0f, 0.0f, -1.0f));
 
-        camera.setPo((Vector3f) Vector3f.createFrom(0.0f, 0.0f, 0.0f));
+        // camera.setPo((Vector3f) Vector3f.createFrom(0.0f, 0.0f, 0.0f));
 
+
+        camera.setMode('r');
         SceneNode cameraNode = rootNode.createChildSceneNode(camera.getName() + "Node");
-        cameraNode.attachObject(camera);
+        // cameraNode.attachObject(camera);
     }
 
 
     private SceneNode playerAvatarN;
+    private Tessellation tessE;
 
 
     @Override
@@ -148,12 +153,12 @@ public class MyGame extends VariableFrameRateGame {
         TextureManager textureMangr = getEngine().getTextureManager();
         // point texture path to skyboxes dir
         textureMangr.setBaseDirectoryPath(conf.valueOf("assets.skyboxes.path"));
-        Texture skyboxFront = textureMangr.getAssetByPath("front.jpg");
-        Texture skyboxBack = textureMangr.getAssetByPath("back.jpg");
-        Texture skyboxLeft = textureMangr.getAssetByPath("left.jpg");
-        Texture skyboxRight = textureMangr.getAssetByPath("right.jpg");
-        Texture skyboxTop = textureMangr.getAssetByPath("top.jpg");
-        Texture skyboxBottom = textureMangr.getAssetByPath("bottom.jpg");
+        Texture skyboxFront = textureMangr.getAssetByPath("front.png");
+        Texture skyboxBack = textureMangr.getAssetByPath("back.png");
+        Texture skyboxLeft = textureMangr.getAssetByPath("left.png");
+        Texture skyboxRight = textureMangr.getAssetByPath("right.png");
+        Texture skyboxTop = textureMangr.getAssetByPath("top.png");
+        Texture skyboxBottom = textureMangr.getAssetByPath("bottom.png");
         // point texture path back to textures dir
         textureMangr.setBaseDirectoryPath(conf.valueOf("assets.textures.path"));
         AffineTransform xform = new AffineTransform();
@@ -198,6 +203,7 @@ public class MyGame extends VariableFrameRateGame {
                 (TextureState) renderSys.createRenderState(RenderState.Type.TEXTURE);
         textureState.setTexture(playerAvatarTexture);
         playerAvatarE.setRenderState(textureState);
+        playerAvatarN.attachObject(camera);
 
 
 
@@ -218,6 +224,24 @@ public class MyGame extends VariableFrameRateGame {
         colorAction = new ColorAction(sceneMangr);
         inputMangr.associateAction(kbName, Key.SPACE, colorAction,
                 InputManager.INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+
+        // 2^{patches} : min=5, def=7, warnings start at 10
+        int patches = ((Integer) jsEngine.get("patches")).intValue();
+        double subdivisions = ((Double) jsEngine.get("subdivisions")).floatValue();
+
+        tessE = sceneMangr.createTessellation("tessE", patches);
+        // subdivisions per patch: min=0, try up to 32
+        tessE.setSubdivisions((float) subdivisions);
+        SceneNode tessN = sceneMangr.getRootSceneNode().createChildSceneNode("TessN");
+        tessN.attachObject(tessE);
+        // to move it X and Z must both be positive or negative
+        // tessN.translate(Vector3f.createFrom(-6.2f, -2.2f, 2.7f));
+        // tessN.yaw(Degreef.createFrom(37.2f));
+
+        tessN.scale(1000f, 1000f, 1000f);
+        tessE.setNormalMap(this.getEngine(), "NormalMap2.jpg");
+        tessE.setHeightMap(this.getEngine(), "texture2.jpg");
+        tessE.setTexture(this.getEngine(), "grass2.jpg");
 
 
         setupNetworking();
@@ -280,6 +304,8 @@ public class MyGame extends VariableFrameRateGame {
             playerAvatarN.setLocalPosition((float) xPos, (float) yPos, (float) zPos);
             playerAvatarN.moveBackward(
                     ((Double) (jsEngine.get("avatarMoveBack"))).floatValue());
+            double subdivisions = ((Double) jsEngine.get("subdivisions")).floatValue();
+            tessE.setSubdivisions((float) subdivisions);
         }
     }
 

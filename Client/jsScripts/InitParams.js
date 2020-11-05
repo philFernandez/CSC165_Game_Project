@@ -1,5 +1,11 @@
-// A place for avatar and game parameters (can change on the fly)
+//  avatar position
 var avatarMoveBack = 20.0;
 var playerAvatarPOSx = 0.0;
 var playerAvatarPOSy = 0.0;
 var playerAvatarPOSz = 0.0;
+// ----------------
+
+// for terrain tesselation
+var patches = 8; // requires restart (its an argument to a constructor)
+var subdivisions = 0.0;
+// -----------------------
