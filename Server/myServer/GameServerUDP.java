@@ -1,4 +1,5 @@
 package myServer;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.UUID;
@@ -17,7 +18,6 @@ public class GameServerUDP extends GameConnectionServer<UUID> {
     @Override
     public void processPacket(Object obj, InetAddress senderIP, int senderPort) {
         String message = (String) obj;
-        System.out.println(message);
         String[] messageTokens = message.split(",");
 
         if (messageTokens.length > 0) {
@@ -74,7 +74,6 @@ public class GameServerUDP extends GameConnectionServer<UUID> {
                 sendRotationMessages(clientID, rotMatrix);
             }
         }
-        System.out.println("---------------------------------");
     }
 
     /**

@@ -1,6 +1,7 @@
 package myGame;
 
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -24,6 +25,7 @@ import ray.rage.rendersystem.*;
 import ray.rage.rendersystem.Renderable.*;
 import ray.rage.scene.*;
 import ray.rage.scene.Camera.Frustum.*;
+import ray.rage.util.Configuration;
 import ray.rml.*;
 import ray.rage.rendersystem.gl4.GL4RenderSystem;
 import ray.rage.rendersystem.states.RenderState;
@@ -136,13 +138,42 @@ public class MyGame extends VariableFrameRateGame {
     }
 
 
-    private SceneNode dolphinN;
     private SceneNode playerAvatarN;
 
 
     @Override
     protected void setupScene(Engine eng, SceneManager sceneMangr) throws IOException {
         inputMangr = new GenericInputManager();
+        Configuration conf = getEngine().getConfiguration();
+        TextureManager textureMangr = getEngine().getTextureManager();
+        // point texture path to skyboxes dir
+        textureMangr.setBaseDirectoryPath(conf.valueOf("assets.skyboxes.path"));
+        Texture skyboxFront = textureMangr.getAssetByPath("front.jpg");
+        Texture skyboxBack = textureMangr.getAssetByPath("back.jpg");
+        Texture skyboxLeft = textureMangr.getAssetByPath("left.jpg");
+        Texture skyboxRight = textureMangr.getAssetByPath("right.jpg");
+        Texture skyboxTop = textureMangr.getAssetByPath("top.jpg");
+        Texture skyboxBottom = textureMangr.getAssetByPath("bottom.jpg");
+        // point texture path back to textures dir
+        textureMangr.setBaseDirectoryPath(conf.valueOf("assets.textures.path"));
+        AffineTransform xform = new AffineTransform();
+        xform.translate(0, skyboxFront.getImage().getHeight());
+        xform.scale(1d, -1d);
+        skyboxFront.transform(xform);
+        skyboxBack.transform(xform);
+        skyboxLeft.transform(xform);
+        skyboxRight.transform(xform);
+        skyboxTop.transform(xform);
+        skyboxBottom.transform(xform);
+        SkyBox skyBox = sceneMangr.createSkyBox("skyBox");
+        skyBox.setTexture(skyboxFront, SkyBox.Face.FRONT);
+        skyBox.setTexture(skyboxBack, SkyBox.Face.BACK);
+        skyBox.setTexture(skyboxLeft, SkyBox.Face.LEFT);
+        skyBox.setTexture(skyboxRight, SkyBox.Face.RIGHT);
+        skyBox.setTexture(skyboxTop, SkyBox.Face.TOP);
+        skyBox.setTexture(skyboxBottom, SkyBox.Face.BOTTOM);
+        sceneMangr.setActiveSkyBox(skyBox);
+
         ScriptEngineManager factory = new ScriptEngineManager();
         jsEngine = factory.getEngineByName("js");
         // use spin speed setting from the first script to init dolphin rotation
@@ -161,7 +192,6 @@ public class MyGame extends VariableFrameRateGame {
         double yPos = ((Double) (jsEngine.get("playerAvatarPOSy"))).floatValue();
         double zPos = ((Double) (jsEngine.get("playerAvatarPOSz"))).floatValue();
         playerAvatarN.setLocalPosition((float) xPos, (float) yPos, (float) zPos);
-        TextureManager textureMangr = getEngine().getTextureManager();
         Texture playerAvatarTexture = textureMangr.getAssetByPath("graffiti-brick.jpg");
         RenderSystem renderSys = sceneMangr.getRenderSystem();
         TextureState textureState =
@@ -306,8 +336,8 @@ public class MyGame extends VariableFrameRateGame {
                     INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             inputMangr.associateAction(keyboard, Key.DOWN, moveFwd,
                     INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-            inputMangr.associateAction(keyboard, Key.ESCAPE,
-                    sendCloseConnectionPacketAction, INPUT_ACTION_TYPE.ON_PRESS_ONLY);
+            inputMangr.associateAction(keyboard, Key.Q, sendCloseConnectionPacketAction,
+                    INPUT_ACTION_TYPE.ON_PRESS_ONLY);
         } catch (RuntimeException e) {
             e.printStackTrace();
         }
