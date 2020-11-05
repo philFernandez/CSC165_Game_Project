@@ -360,14 +360,6 @@ public class MyGame extends VariableFrameRateGame {
                     INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             inputMangr.associateAction(keyboard, Key.D, moveFwd,
                     INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-            inputMangr.associateAction(keyboard, Key.RIGHT, moveFwd,
-                    INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-            inputMangr.associateAction(keyboard, Key.LEFT, moveFwd,
-                    INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-            inputMangr.associateAction(keyboard, Key.UP, moveFwd,
-                    INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
-            inputMangr.associateAction(keyboard, Key.DOWN, moveFwd,
-                    INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             inputMangr.associateAction(keyboard, Key.Q, sendCloseConnectionPacketAction,
                     INPUT_ACTION_TYPE.ON_PRESS_ONLY);
         } catch (RuntimeException e) {
