@@ -143,6 +143,7 @@ public class MyGame extends VariableFrameRateGame {
 
     private SceneNode playerAvatarN;
     private Tessellation tessE;
+    private double avatarYPos;
 
 
     @Override
@@ -194,9 +195,9 @@ public class MyGame extends VariableFrameRateGame {
         playerAvatarN
                 .moveBackward(((Double) (jsEngine.get("avatarMoveBack"))).floatValue());
         double xPos = ((Double) (jsEngine.get("playerAvatarPOSx"))).floatValue();
-        double yPos = ((Double) (jsEngine.get("playerAvatarPOSy"))).floatValue();
+        avatarYPos = ((Double) (jsEngine.get("playerAvatarPOSy"))).floatValue();
         double zPos = ((Double) (jsEngine.get("playerAvatarPOSz"))).floatValue();
-        playerAvatarN.setLocalPosition((float) xPos, (float) yPos, (float) zPos);
+        playerAvatarN.setLocalPosition((float) xPos, (float) avatarYPos, (float) zPos);
         Texture playerAvatarTexture = textureMangr.getAssetByPath("graffiti-brick.jpg");
         RenderSystem renderSys = sceneMangr.getRenderSystem();
         TextureState textureState =
@@ -231,7 +232,7 @@ public class MyGame extends VariableFrameRateGame {
         tessE = sceneMangr.createTessellation("tessE", patches);
         // subdivisions per patch: min=0, try up to 32
         tessE.setSubdivisions((float) subdivisions);
-        SceneNode tessN = sceneMangr.getRootSceneNode().createChildSceneNode("TessN");
+        SceneNode tessN = sceneMangr.getRootSceneNode().createChildSceneNode("tessN");
         tessN.attachObject(tessE);
         // to move it X and Z must both be positive or negative
         // tessN.translate(Vector3f.createFrom(-6.2f, -2.2f, 2.7f));
@@ -306,9 +307,10 @@ public class MyGame extends VariableFrameRateGame {
             fileLastModified = modTime;
             this.executeScript(jsEngine, scriptFile1);
             double xPos = ((Double) (jsEngine.get("playerAvatarPOSx"))).floatValue();
-            double yPos = ((Double) (jsEngine.get("playerAvatarPOSy"))).floatValue();
+            avatarYPos = ((Double) (jsEngine.get("playerAvatarPOSy"))).floatValue();
             double zPos = ((Double) (jsEngine.get("playerAvatarPOSz"))).floatValue();
-            playerAvatarN.setLocalPosition((float) xPos, (float) yPos, (float) zPos);
+            playerAvatarN.setLocalPosition((float) xPos, (float) avatarYPos,
+                    (float) zPos);
             playerAvatarN.moveBackward(
                     ((Double) (jsEngine.get("avatarMoveBack"))).floatValue());
             double subdivisions = ((Double) jsEngine.get("subdivisions")).floatValue();
@@ -316,10 +318,28 @@ public class MyGame extends VariableFrameRateGame {
         }
     }
 
-    public float getDelta() {
-        return delta;
-    }
+    public void updateVerticalPosition() {
+        SceneNode playerAvatarN =
+                getEngine().getSceneManager().getSceneNode("playerAvatarNode");
+        SceneNode tessN = getEngine().getSceneManager().getSceneNode("tessN");
+        Tessellation tessE = ((Tessellation) tessN.getAttachedObject("tessE"));
 
+        // Figure out Avatar's position relative to plane
+        Vector3 worldAvatarPosition = playerAvatarN.getWorldPosition();
+        Vector3 localAvatarPosition = playerAvatarN.getLocalPosition();
+
+        // use avatar World coords to get coords for height
+        Vector3 newAvatarPosition = Vector3f.createFrom(
+                // X coord stays the same
+                localAvatarPosition.x(),
+                // Y coord is varying 
+                // (add avatarYpos to keep origionally assigned Y distance from x=0)
+                tessE.getWorldHeight(worldAvatarPosition.x(), worldAvatarPosition.z())
+                        + (float) avatarYPos,
+                // Z coord stays the same
+                localAvatarPosition.z());
+        playerAvatarN.setLocalPosition(newAvatarPosition);
+    }
 
 
     @Override
@@ -346,7 +366,7 @@ public class MyGame extends VariableFrameRateGame {
     protected void setupInputs() {
         SceneNode playerNode =
                 getEngine().getSceneManager().getSceneNode("playerAvatarNode");
-        moveFwd = new MoveForwardAction(playerNode, protocolClient);
+        moveFwd = new MoveForwardAction(playerNode, protocolClient, this);
         Action sendCloseConnectionPacketAction = new Action() {
             @Override
             public void performAction(float time, Event event) {
@@ -405,6 +425,10 @@ public class MyGame extends VariableFrameRateGame {
 
     public InputManager getInputManager() {
         return inputMangr;
+    }
+
+    public float getDelta() {
+        return delta;
     }
 
 }
