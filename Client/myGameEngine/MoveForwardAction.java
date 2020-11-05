@@ -19,13 +19,13 @@ public class MoveForwardAction extends AbstractInputAction {
         String component = event.getComponent().toString();
         switch (component) {
             case "W":
-                avN.moveForward(0.05f);
+                avN.moveForward(0.1f);
                 break;
             case "A":
                 avN.yaw(Degreef.createFrom(-1.0f));
                 break;
             case "S":
-                avN.moveBackward(0.05f);
+                avN.moveBackward(0.1f);
                 break;
             case "D":
                 avN.yaw(Degreef.createFrom(1.0f));
