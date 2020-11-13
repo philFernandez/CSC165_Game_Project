@@ -25,6 +25,7 @@ import ray.rage.rendersystem.*;
 import ray.rage.rendersystem.Renderable.*;
 import ray.rage.scene.*;
 import ray.rage.scene.Camera.Frustum.*;
+import ray.rage.scene.SkeletalEntity.EndType;
 import ray.rage.util.Configuration;
 import ray.rml.*;
 import ray.rage.rendersystem.gl4.GL4RenderSystem;
@@ -34,6 +35,7 @@ import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.awt.event.*;
 
 public class MyGame extends VariableFrameRateGame {
     private String serverAddress;
@@ -186,24 +188,26 @@ public class MyGame extends VariableFrameRateGame {
         scriptFile1 = new File("jsScripts/InitParams.js");
         this.executeScript(jsEngine, scriptFile1);
 
+        // SkeletalEntity roboEntity = sceneMangr.createSkeletalEntity("playerAvatar",
+        //         "myrobot.rkm", "myrobot.rks");
+        // Texture tex = sceneMangr.getTextureManager().getAssetByPath("myrobot.jpg");
+        // TextureState tstate = (TextureState) sceneMangr.getRenderSystem()
+        //         .createRenderState(RenderState.Type.TEXTURE);
+        // tstate.setTexture(tex);
+        // roboEntity.setRenderState(tstate);
 
-        Entity playerAvatarE = sceneMangr.createEntity("playerAvatar", "cube_nomat.obj");
-        playerAvatarE.setPrimitive(Primitive.TRIANGLES);
-        playerAvatarN = sceneMangr.getRootSceneNode()
-                .createChildSceneNode(playerAvatarE.getName() + "Node");
-        playerAvatarN.attachObject(playerAvatarE);
-        playerAvatarN
-                .moveBackward(((Double) (jsEngine.get("avatarMoveBack"))).floatValue());
-        double xPos = ((Double) (jsEngine.get("playerAvatarPOSx"))).floatValue();
-        avatarYPos = ((Double) (jsEngine.get("playerAvatarPOSy"))).floatValue();
-        double zPos = ((Double) (jsEngine.get("playerAvatarPOSz"))).floatValue();
-        playerAvatarN.setLocalPosition((float) xPos, (float) avatarYPos, (float) zPos);
-        Texture playerAvatarTexture = textureMangr.getAssetByPath("graffiti-brick.jpg");
-        RenderSystem renderSys = sceneMangr.getRenderSystem();
-        TextureState textureState =
-                (TextureState) renderSys.createRenderState(RenderState.Type.TEXTURE);
-        textureState.setTexture(playerAvatarTexture);
-        playerAvatarE.setRenderState(textureState);
+        // SceneNode roboNode =
+        //         sceneMangr.getRootSceneNode().createChildSceneNode("playerAvatarNode");
+        // roboNode.attachObject(roboEntity);
+        // roboNode.translate(0, 0.5f, 0);
+
+        // roboEntity.loadAnimation("waveAnimation", "myrobot.rka");
+        // roboEntity.playAnimation("waveAnimation", 0.5f, EndType.LOOP, 0);
+
+        Entity carE = sceneMangr.createEntity("playerAvatar", "car.obj");
+        SceneNode carN =
+                sceneMangr.getRootSceneNode().createChildSceneNode("playerAvatarNode");
+        carN.attachObject(carE);
 
 
 
@@ -241,13 +245,15 @@ public class MyGame extends VariableFrameRateGame {
         tessN.scale(1000f, 1000f, 1000f);
         tessE.setNormalMap(this.getEngine(), "NormalMap2.jpg");
         tessE.setHeightMap(this.getEngine(), "texture2.jpg");
-        tessE.setTexture(this.getEngine(), "grass2.jpg");
+        tessE.setTexture(this.getEngine(), "grassy.jpg");
 
 
         setupOrbitCamera(engine, sceneMangr);
         setupNetworking();
         setupInputs();
     }
+
+
 
     protected void processNetworking(float elapsTime) {
         // process packets received by client from server
@@ -302,6 +308,8 @@ public class MyGame extends VariableFrameRateGame {
 
     private void updateParameterScript() {
         // Should update on the fly? but doesn't
+        SceneNode playerAvatarN =
+                getEngine().getSceneManager().getSceneNode("playerAvatarNode");
         long modTime = scriptFile1.lastModified();
         if (modTime > fileLastModified) {
             fileLastModified = modTime;
@@ -352,11 +360,14 @@ public class MyGame extends VariableFrameRateGame {
         elapsTimeStr = Integer.toString(elapsTimeSec);
         counterStr = Integer.toString(counter);
         dispStr = "Time = " + elapsTimeStr + "   Keyboard hits = " + counterStr;
-        rs.setHUD(dispStr, 15, 15);
+        rs.setHUD("Early Beta", 15, 15);
         processNetworking(elapsTime);
         inputMangr.update(elapsTime);
         cameraOrbitController.updateCameraPosition();
         updateParameterScript();
+        // SkeletalEntity entity =
+        //         (SkeletalEntity) engine.getSceneManager().getEntity("playerAvatar");
+        // entity.update();
     }
 
     public void setIsConnected(boolean isConnected) {
@@ -386,6 +397,8 @@ public class MyGame extends VariableFrameRateGame {
             inputMangr.associateAction(keyboard, Key.S, moveFwd,
                     INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             inputMangr.associateAction(keyboard, Key.D, moveFwd,
+                    INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
+            inputMangr.associateAction(keyboard, Key.H, moveFwd,
                     INPUT_ACTION_TYPE.REPEAT_WHILE_DOWN);
             inputMangr.associateAction(keyboard, Key.Q, sendCloseConnectionPacketAction,
                     INPUT_ACTION_TYPE.ON_PRESS_ONLY);
@@ -429,6 +442,32 @@ public class MyGame extends VariableFrameRateGame {
 
     public float getDelta() {
         return delta;
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_V:
+                doAnimation("waveAnimation", false);
+                break;
+            case KeyEvent.VK_C:
+                doAnimation("clapAnimation", false);
+                break;
+            case KeyEvent.VK_P:
+                doAnimation("animation", true);
+                break;
+        }
+        super.keyPressed(e);
+    }
+
+    private void doAnimation(String animation, boolean stop) {
+        SkeletalEntity playerEntity =
+                (SkeletalEntity) getEngine().getSceneManager().getEntity("playerAvatar");
+        playerEntity.stopAnimation();
+        if (!stop) {
+            System.out.println("I do " + animation);
+            playerEntity.playAnimation(animation, 0.5f, EndType.LOOP, 0);
+        }
     }
 
 }

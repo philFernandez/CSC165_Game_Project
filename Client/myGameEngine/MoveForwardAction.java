@@ -5,6 +5,8 @@ import net.java.games.input.Event;
 import ray.input.action.AbstractInputAction;
 import ray.rage.scene.Node;
 import ray.rml.Degreef;
+import ray.rml.Vector3;
+import ray.rml.Vector3f;
 
 public class MoveForwardAction extends AbstractInputAction {
     private Node avN;
@@ -22,26 +24,26 @@ public class MoveForwardAction extends AbstractInputAction {
         String component = event.getComponent().toString();
         switch (component) {
             case "W":
-                avN.moveForward(0.1f);
+                avN.moveForward(25.5f * game.getDelta() / 1000.0f);
                 break;
             case "A":
-                avN.yaw(Degreef.createFrom(-1.0f));
+                avN.yaw(Degreef.createFrom(-100.5f * game.getDelta() / 1000.0f));
                 break;
             case "S":
-                avN.moveBackward(0.1f);
+                avN.moveBackward(25.5f * game.getDelta() / 1000.0f);
                 break;
             case "D":
-                avN.yaw(Degreef.createFrom(1.0f));
+                avN.yaw(Degreef.createFrom(100.5f * game.getDelta() / 1000.0f));
                 break;
-            case "Up":
-                avN.pitch(Degreef.createFrom(-1.0f));
+            case "H":
+                avN.setLocalPosition(Vector3f.createFrom(0.0f, 0.0f, 0.0f));
                 break;
 
         }
         // have to to protocol client to call the server and tell 
         // other clients that this client has moved, so they can 
         // update their ghost avatar representing this client
-        if (component == "W" || component == "S") {
+        if (component == "W" || component == "S" || component == "H") {
             game.updateVerticalPosition();
             protocolClient.sendMoveMessage(avN.getWorldPosition());
 
